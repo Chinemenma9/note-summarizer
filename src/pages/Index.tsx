@@ -1,3 +1,4 @@
+  import { GoogleGenAI } from "@google/genai";
 import { NoteSummarizer } from '@/components/NoteSummarizer';
 import { SummaryLength } from '@/components/LengthSelector';
 
@@ -5,31 +6,39 @@ import { SummaryLength } from '@/components/LengthSelector';
 const mockSummarize = async (text: string, length: SummaryLength): Promise<string> => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1800));
-  
-  const sentences = text.split(/[.!?]+/).filter(s => s.trim());
-  const wordCount = text.trim().split(/\s+/).length;
-  
-  if (wordCount < 10) {
-    return text.trim();
-  }
-  
-  // Adjust summary based on length preference
-  const lengthMultiplier = {
-    short: 0.2,
-    medium: 0.4,
-    detailed: 0.6,
-  };
-  
-  const summaryLength = Math.max(1, Math.ceil(sentences.length * lengthMultiplier[length]));
-  const summarySentences = sentences.slice(0, summaryLength);
-  
-  const prefix = {
-    short: '📝 Quick summary: ',
-    medium: '📋 Summary: ',
-    detailed: '📖 Detailed summary: ',
-  };
-  
-  return `${prefix[length]}${summarySentences.join('. ').trim()}.`;
+
+// The client gets the API key from the environment variable `GEMINI_API_KEY`.
+const ai = new GoogleGenAI({apiKey:"AIzaSyDENxSmEgk3_o1lJNQc923gRHgmCfoOCC0"});
+
+async function summarize(text:string, length:SummaryLength) {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: text,
+    config:{
+      systemInstruction:`You are a helpful academic note-summarization assistant.
+
+Your task is to read user-provided notes, articles, or pasted text and produce a clear, accurate, and concise summary.
+
+Guidelines:
+- Focus on the most important ideas, concepts, and key points.
+- Remove unnecessary repetition, filler words, and irrelevant details.
+- Preserve the original meaning and intent of the text.
+- Use simple, easy-to-understand language.
+- Do not add new information that is not present in the original text.
+- If the input is long, structure the summary into short paragraphs or bullet points.
+- If the text is already short, produce an even more concise version.
+- Maintain a neutral and academic tone unless the text is casual.
+- Do not include personal opinions or commentary.
+- Avoid emojis, slang, or informal expressions.
+- Make the length ${length}.
+
+Output only the summarized content.
+`
+    }
+  });
+ return response.text;
+}
+return await summarize(text, length)
 };
 
 const Index = () => {
